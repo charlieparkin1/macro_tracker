@@ -1,8 +1,8 @@
-numpy==2.3.5
-pandas==2.3.3
-plotly==6.5.0
-python-dotenv @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_0bqseadoho/croot/python-dotenv_1745610246418/work
-requests @ file:///opt/miniconda3/conda-bld/requests_1762359592010/work
-schedule==1.2.2
-streamlit==1.51.0
-yfinance==0.2.66
+streamlit
+pandas
+plotly
+yfinance
+requests
+schedule
+python-dotenv
+numpy
