@@ -3,9 +3,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import os
 import glob
-import yfinance as yf
 import sys
 import time
+import yfinance as yf
 from datetime import datetime, timedelta
 
 # --- 1. PAGE CONFIGURATION ---
@@ -95,6 +95,7 @@ chart_files = [f for f in all_files if "calendar.csv" not in f]
 if not chart_files:
     with st.spinner("🚀 First-run detected: Initializing Cloud Engine & Fetching Data from FRED..."):
         try:
+            # Point to root directory so we can import modules
             sys.path.append(os.getcwd())
             from src.processing.scheduler import MacroScheduler
             
@@ -132,6 +133,7 @@ def fetch_market_data(ticker, start_date):
     try:
         safe_start = start_date - timedelta(days=30)
         df = yf.download(ticker, start=safe_start, progress=False)
+        # Handle MultiIndex if returned by newer yfinance versions
         if isinstance(df.columns, pd.MultiIndex):
             return df['Close'].iloc[:, 0]
         return df['Close']
@@ -218,9 +220,9 @@ with tab_chart:
         st.markdown("###### INDICATOR SELECTION")
         selected_series = st.radio("Select Series", list(sorted_data_store.keys()), label_visibility="collapsed")
         
-        # --- UK INFLATION WARNING ---
+        # --- UK WARNING ---
         if selected_series == "UK INFLATION":
-            st.warning("⚠️ Note: UK Inflation data sourced via FRED may be lagged. Cross-reference with ONS for live trading.")
+            st.warning("⚠️ UK Data sourced via FRED. Cross-reference with ONS for live trading.")
         
         st.markdown("---")
         
@@ -298,14 +300,14 @@ with tab_chart:
                     mode='lines',
                     name=selected_market,
                     yaxis="y2", 
-                    line=dict(color='#90A4AE', width=1.5), # Professional Slate Silver
+                    line=dict(color='#90A4AE', width=1.5), # Professional Silver
                     opacity=0.8
                 ))
 
         fig.update_layout(
             height=550,
             paper_bgcolor="#000000", plot_bgcolor="#000000",
-            # Increased Bottom Margin for the new Legend Position
+            # Increased bottom margin to fit the legend comfortably
             margin=dict(l=60, r=60, t=30, b=50),
             dragmode='pan', 
             
@@ -330,21 +332,21 @@ with tab_chart:
                 tickformat="%d/%m/%Y"
             ),
             
-            # RIGHT AXIS (Macro)
+            # RIGHT AXIS (Macro Data - DYNAMIC TITLE)
             yaxis=dict(
-                title=dict(text="MACRO VALUE", font=dict(color="#00E396", size=11)),
+                title=dict(text=selected_series, font=dict(color="#00E396", size=12, weight="bold")),
                 showgrid=True, gridcolor='#222', zeroline=False, side='right', 
                 tickfont=dict(color='#00E396'),
                 range=[final_y_min, final_y_max], autorange=False, fixedrange=False
             ),
             
-            # LEFT AXIS (Market Overlay) - FIX: No forced tickformat
+            # LEFT AXIS (Market Overlay - DYNAMIC TITLE)
             yaxis2=dict(
-                title=dict(text="MARKET PRICE", font=dict(color="#9b5de5", size=11)),
+                title=dict(text=selected_market if selected_market != "None" else "", font=dict(color="#90A4AE", size=12, weight="bold")),
                 overlaying="y", side="left", showgrid=False,
-                tickfont=dict(color='#9b5de5'),
-                fixedrange=False
-                # Removed 'tickformat=",.0f"' to allow decimals
+                tickfont=dict(color='#90A4AE'),
+                fixedrange=False,
+                # tickformat removed to allow auto-precision (fixing the EUR/USD issue)
             ),
             
             hovermode="x unified", 
