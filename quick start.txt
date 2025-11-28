@@ -1,0 +1,5 @@
+cd /Users/charlieparkin/Desktop/macro_tracker
+python3 main.py
+
+cd /Users/charlieparkin/Desktop/macro_tracker
+streamlit run src/dashboard/main_dashboard.py

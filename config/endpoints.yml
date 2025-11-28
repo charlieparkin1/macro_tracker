@@ -1,0 +1,10 @@
+# Source: api_endpoints_reference.txt 
+fred:
+  base_url: "https://api.stlouisfed.org/fred"
+  series_endpoint: "/series/observations"
+  
+ecb:
+  base_url: "https://sdw-wsrest.ecb.europa.eu/service"
+  
+oecd:
+  base_url: "https://stats.oecd.org/SDMX-JSON/data"

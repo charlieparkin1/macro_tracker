@@ -1,0 +1,2 @@
+fred:
+  api_key: "KEY_MOVED_TO_ENV_FILE"
