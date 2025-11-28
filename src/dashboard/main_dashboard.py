@@ -82,17 +82,16 @@ st.markdown("""
         letter-spacing: 1px;
     }
     
-    /* Custom Warning Text for Ticker */
+    /* Custom Warning for Ticker */
     .ticker-note {
-        font-size: 0.7rem;
-        color: #e57373; /* Subtle Red */
-        margin-top: -10px;
-        margin-bottom: 10px;
+        font-size: 0.75rem;
+        color: #e57373;
+        margin-top: 5px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. DATA LOADING & AUTO-HYDRATION ---
+# --- 3. DATA LOADING ---
 data_path = "data/processed/"
 all_files = glob.glob(os.path.join(data_path, "*.csv"))
 
@@ -101,7 +100,7 @@ chart_files = [f for f in all_files if "calendar.csv" not in f]
 
 # === CLOUD AUTO-FIX LOGIC ===
 if not chart_files:
-    with st.spinner("System Initialization: Cloud Engine Starting & Fetching Data..."):
+    with st.spinner("🚀 First-run detected: Initializing Cloud Engine & Fetching Data from FRED..."):
         try:
             sys.path.append(os.getcwd())
             from src.processing.scheduler import MacroScheduler
@@ -110,8 +109,8 @@ if not chart_files:
             scheduler = MacroScheduler()
             scheduler.run_pipeline()
             
-            time.sleep(1) 
-            st.rerun() 
+            time.sleep(1) # Brief pause to ensure file write
+            st.rerun() # Refresh to load the new data
             
         except Exception as e:
             st.error(f"Critical Boot Error: {e}")
@@ -182,8 +181,8 @@ for key in DISPLAY_ORDER:
 # --- 6. DASHBOARD HEADER ---
 c1, c2 = st.columns([3, 1])
 with c1:
-    st.markdown("### MACRO EVENT TRACKER")
-    st.markdown(f"<div style='color: #666; font-size: 0.75rem; font-family: Roboto Mono;'>DATE: {datetime.now().strftime('%d/%m/%Y')} | UTC</div>", unsafe_allow_html=True)
+    st.markdown("### MACRO EVENT TRACKER | REAL-TIME ANALYTICS")
+    st.markdown(f"<div style='color: #666; font-size: 0.8rem;'>DASHBOARD DATE: {datetime.now().strftime('%d/%m/%Y')}</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -212,31 +211,30 @@ for idx, (name, df) in enumerate(sorted_data_store.items()):
             value=val_fmt,
             delta=f"{delta:+.2f}"
         )
-        
-        # --- UK INFLATION WARNING (MOVED HERE) ---
+        # --- MOVED: UK INFLATION NOTE ---
         if name == "UK INFLATION":
             st.markdown('<div class="ticker-note">Note: FRED Data (Lagged)</div>', unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("<br><br>", unsafe_allow_html=True)
 
 # --- 8. MAIN WORKSPACE ---
-tab_chart, tab_data, tab_cal = st.tabs(["ANALYTICS", "DATA LOG", "CALENDAR"])
+tab_chart, tab_data, tab_cal = st.tabs(["ANALYTICS & CHARTING", "RAW DATA LOG", "UPCOMING CALENDAR"])
 
 with tab_chart:
     st.markdown("##")
     col_ctrl, col_graph = st.columns([1, 4])
     
-    # Init vars
-    current_vol, high_12m, low_12m = 0, 0, 0
-    corr_display, corr_color = "N/A", "#666"
-    
     with col_ctrl:
-        st.markdown("###### SERIES")
+        st.markdown("###### INDICATOR SELECTION")
         selected_series = st.radio("Select Series", list(sorted_data_store.keys()), label_visibility="collapsed")
         
+        # --- REMOVED: UK WARNING FROM HERE ---
+        
         st.markdown("---")
-        st.markdown("###### BENCHMARK")
-        selected_market = st.selectbox("Overlay Asset:", list(MARKET_ASSETS.keys()), index=0)
+        
+        st.markdown("###### MARKET OVERLAY")
+        selected_market = st.selectbox("Compare vs Asset:", list(MARKET_ASSETS.keys()), index=0)
+        
         st.markdown("---")
         
         df_chart = sorted_data_store[selected_series]
@@ -254,37 +252,20 @@ with tab_chart:
             current_vol = df_chart['value'].std()
             high_12m = df_chart['value'].max()
             low_12m = df_chart['value'].min()
-            
-        # Correlation Engine
-        if selected_market != "None":
-            ticker = MARKET_ASSETS[selected_market]
-            mkt_data = fetch_market_data(ticker, cutoff_date)
-            if not mkt_data.empty:
-                macro_series = stats_df.set_index('date')['value']
-                mkt_aligned = mkt_data.reindex(macro_series.index, method='ffill')
-                correlation_val = macro_series.corr(mkt_aligned)
-                corr_display = f"{correlation_val:.2f}"
-                if correlation_val > 0.5: corr_color = "#00E396"
-                elif correlation_val < -0.5: corr_color = "#FF4560"
         
         st.markdown(f"""
-        <div style='background-color: #111; padding: 12px; border: 1px solid #333;'>
-            <div style='color: #666; font-size: 0.7rem; text-transform: uppercase;'>12M Volatility (SD)</div>
-            <div style='color: #ccc; font-size: 1.1rem; font-family: Roboto Mono; margin-bottom: 8px;'>{current_vol:,.2f}</div>
-            
-            <div style='color: #666; font-size: 0.7rem; text-transform: uppercase;'>12M High</div>
-            <div style='color: #00B5FD; font-size: 1.1rem; font-family: Roboto Mono; margin-bottom: 8px;'>{high_12m:,.2f}</div>
-            
-            <div style='color: #666; font-size: 0.7rem; text-transform: uppercase;'>12M Low</div>
-            <div style='color: #00B5FD; font-size: 1.1rem; font-family: Roboto Mono; margin-bottom: 8px;'>{low_12m:,.2f}</div>
-            
-            <div style='color: #666; font-size: 0.7rem; text-transform: uppercase; border-top: 1px solid #333; padding-top: 8px;'>Correlation ({selected_market})</div>
-            <div style='color: {corr_color}; font-size: 1.1rem; font-family: Roboto Mono;'>{corr_display}</div>
+        <div style='background-color: #121212; padding: 10px; border: 1px solid #333;'>
+            <div style='color: #888; font-size: 0.75rem;'>12M VOLATILITY (SD)</div>
+            <div style='color: #fff; font-size: 1.1rem; margin-bottom: 8px;'>{current_vol:,.2f}</div>
+            <div style='color: #888; font-size: 0.75rem;'>12M HIGH</div>
+            <div style='color: #fff; font-size: 1.1rem; margin-bottom: 8px;'>{high_12m:,.2f}</div>
+            <div style='color: #888; font-size: 0.75rem;'>12M LOW</div>
+            <div style='color: #fff; font-size: 1.1rem;'>{low_12m:,.2f}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with col_graph:
-        st.caption("Note: Smart View enabled. Default restricted to last 10 years with outlier clipping. Scroll to zoom, Drag to pan.")
+        st.caption("ℹ️ **Smart View:** Default restricted to last 10 years with outlier clipping. Use mouse wheel to zoom, click-drag to pan.")
         
         max_date_ts = df_chart['date'].max()
         min_date_ts = max_date_ts - pd.DateOffset(years=10)
@@ -298,23 +279,22 @@ with tab_chart:
         
         fig = go.Figure()
         
-        # 1. PRIMARY MACRO DATA (Right Axis) - CYAN
+        # 1. PRIMARY MACRO DATA (Right Axis)
         fig.add_trace(go.Scatter(
             x=df_chart['date'], y=df_chart['value'],
-            mode='lines', name=selected_series,
-            line=dict(color='#00B5FD', width=1.5), 
-            fill='tozeroy', fillcolor='rgba(0, 181, 253, 0.05)'
+            mode='lines', name='Actual',
+            line=dict(color='#00E396', width=2), # PERFECT GREEN
+            fill='tozeroy', fillcolor='rgba(0, 227, 150, 0.1)' 
         ))
         
-        # Trend Line - AMBER
         df_chart['MA'] = df_chart['value'].rolling(window=12).mean()
         fig.add_trace(go.Scatter(
             x=df_chart['date'], y=df_chart['MA'],
             mode='lines', name='12M Trend',
-            line=dict(color='#FFAB00', width=1, dash='dash')
+            line=dict(color='#FF8C00', width=1)
         ))
 
-        # 2. MARKET DATA (Left Axis) - SLATE
+        # 2. MARKET DATA (Left Axis)
         if selected_market != "None":
             ticker = MARKET_ASSETS[selected_market]
             market_data = fetch_market_data(ticker, min_date_ts)
@@ -325,23 +305,23 @@ with tab_chart:
                     y=market_data.values,
                     mode='lines',
                     name=selected_market,
-                    yaxis="y2",
-                    line=dict(color='#90A4AE', width=1.5), 
+                    yaxis="y2", 
+                    line=dict(color='#90A4AE', width=1.5), # PROFESSIONAL SILVER
                     opacity=0.8
                 ))
 
         fig.update_layout(
             height=550,
             paper_bgcolor="#000000", plot_bgcolor="#000000",
-            margin=dict(l=60, r=60, t=40, b=60), 
+            margin=dict(l=60, r=60, t=30, b=50),
             dragmode='pan', 
             
             xaxis=dict(
                 title=dict(text="DATE", font=dict(color="#cccccc", size=12)),
                 showgrid=False, linecolor='#333', tickfont=dict(color='#666'),
                 range=[min_date_ts, max_date_ts],
-                rangeslider=dict(visible=False), 
                 
+                rangeslider=dict(visible=True, bordercolor="#333", borderwidth=1, bgcolor="#121212"),
                 rangeselector=dict(
                     buttons=list([
                         dict(count=6, label="6M", step="month", stepmode="backward"),
@@ -349,35 +329,38 @@ with tab_chart:
                         dict(count=5, label="5Y", step="year", stepmode="backward"),
                         dict(step="all", label="MAX")
                     ]),
-                    bgcolor="#111", activecolor="#333", font=dict(color="white")
+                    bgcolor="#121212", activecolor="#333", font=dict(color="white")
                 ),
                 fixedrange=False,
                 tickformat="%d/%m/%Y"
             ),
             
-            # RIGHT AXIS (Macro)
+            # RIGHT AXIS (Macro Data - DYNAMIC TITLE)
             yaxis=dict(
-                title=dict(text=selected_series, font=dict(color="#00B5FD", size=11, weight="bold")),
-                showgrid=True, gridcolor='#1a1a1a', 
-                zeroline=False, side='right', 
-                tickfont=dict(color='#00B5FD'),
+                title=dict(text=selected_series, font=dict(color="#00E396", size=12, weight="bold")),
+                showgrid=True, gridcolor='#222', zeroline=False, side='right', 
+                tickfont=dict(color='#00E396'),
                 range=[final_y_min, final_y_max], autorange=False, fixedrange=False
             ),
             
-            # LEFT AXIS (Market)
+            # LEFT AXIS (Market Overlay - DYNAMIC TITLE)
             yaxis2=dict(
-                title=dict(text=selected_market if selected_market != "None" else "", font=dict(color="#90A4AE", size=11, weight="bold")),
+                title=dict(text=selected_market if selected_market != "None" else "", font=dict(color="#90A4AE", size=12, weight="bold")),
                 overlaying="y", side="left", showgrid=False,
                 tickfont=dict(color='#90A4AE'),
-                fixedrange=False
-                # No tickformat, allowing auto-precision
+                fixedrange=False,
+                # No tickformat (Auto-Precision)
             ),
             
             hovermode="x unified", 
             showlegend=True,
+            
+            # MOVED LEGEND TO BOTTOM CENTER
             legend=dict(
                 orientation="h", 
-                y=-0.2, x=0.5, xanchor="center", 
+                y=-0.2, 
+                x=0.5, 
+                xanchor="center", 
                 bgcolor="rgba(0,0,0,0)",
                 font=dict(color="#ccc")
             )
@@ -404,6 +387,7 @@ with tab_data:
         
     filtered_log = filtered_log.sort_values(by=['date', 'indicator'], ascending=[False, True])
     
+    # Left Alignment Logic
     def format_for_display(row):
         val = row['value']
         if "NFP" in row['indicator']:
@@ -455,4 +439,4 @@ with tab_cal:
             hide_index=True
         )
     except FileNotFoundError:
-        st.warning("Note: Calendar data not found. Please wait for system generation.")
+        st.warning("⚠️ Calendar data not found. Please run 'python3 main.py' to generate the schedule.")
